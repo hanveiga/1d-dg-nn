@@ -10,7 +10,7 @@ from parameters import *
 from models_explicit import GenericModel
 
 def main():
-    data = load_data(dataset_path)
+    data = load_data(dataset_path, normalised=True)
 
     model = GenericModel()
     model.make_model()
@@ -43,36 +43,33 @@ def main():
                 precision = session.run(model.precision)
                 print "Accuracy: %f, Recall: %f, Precision: %f" %(accuracy, recall, precision)
 
-            #w = session.run(model.weights)
-            #b = session.run(model.biases)
-            #print w1
-            #print w1.shape
-            #print w2
-            #print w2.shape
-
-        #print 'Test accuracy: {0}%'.format(accuracy(test_prediction.eval(), test_labels))
-        # Pass the variables as a dict:
-        #saver = tf.train.Saver({'v1': model.layer1_weights, 'v2': model.layer2_weights})
         for a in range(len(model.weights)):
             w = session.run(model.weights[a])
             b = session.run(model.biases[a])
             model.save_weights(w,'w'+str(a)+identifier)
             model.save_weights(b,'b'+str(a)+identifier)
             w_l = model.load_weights('w'+str(a)+identifier)
-            print w_l.shape
             b_l = model.load_weights('b'+str(a)+identifier)
-            print b_l.shape
-
+            
         # perform prediction on some test set
 
-        minibatch_data = data.test._features[0:batch_size,:]
-        P = session.run(model.predict_op, feed_dict={model.tf_train_dataset: minibatch_data})
-        print P
-        loss = session.run(model.loss, feed_dict={model.model_scores: P, model.tf_train_labels_probas: data.test._labels_probas[0:batch_size]})
-        print loss
+        # compute  average recall, precison and accuracy
+        nfolds  = data.validation._labels.shape[0]/batch_size
+        accuracy_accum = []
+        recall_accum = []
+        precision_accum = []
+        print nfolds
+        for fold in range(nfolds):
+            minibatch_data = data.validation._features[fold*batch_size:(fold+1)*batch_size,:]
+            minibatch_labels = data.validation._labels[fold*batch_size:(fold+1)*batch_size]
+            print np.sum(minibatch_labels)
+            P = session.run(model.predict_op, feed_dict={model.tf_train_dataset: minibatch_data})
+            [accuracy, recall, precision] = get_metrics(P, minibatch_labels, session, model)
+            accuracy_accum.append(accuracy)
+            recall_accum.append(recall)
+            precision_accum.append(precision)
 
-        accuracy, recall, precision = get_metrics(predictions, true_labels, session, model)
-
+        print np.mean(accuracy_accum), np.mean(recall_accum), np.mean(precision_accum)
 
 def get_binary_outputs(predictions_proba):
     pred_binary = []
@@ -87,6 +84,7 @@ def get_binary_outputs(predictions_proba):
 
 def get_metrics(predictions, true_labels, session, model):
     pred_bin = get_binary_outputs(predictions)
+    print np.sum(pred_bin)
     session.run(model.acc_op, feed_dict = {model.tf_train_labels: true_labels, model.tf_train_labels_pred:  pred_bin})
     session.run(model.recall_op, feed_dict = {model.tf_train_labels: true_labels, model.tf_train_labels_pred:  pred_bin})
     session.run(model.precision_op, feed_dict = {model.tf_train_labels: true_labels, model.tf_train_labels_pred:  pred_bin})

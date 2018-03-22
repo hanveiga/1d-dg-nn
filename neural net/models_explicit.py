@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class GenericModel(object):
         def __init__(self):
@@ -14,21 +14,14 @@ class GenericModel(object):
             # maybe refactor later
 
         def make_model(self):
-            # a bit gross
-            hidden_nodes_1 = n_hidden_1
-            hidden_nodes_2 = n_hidden_2
-            hidden_nodes_3 = n_hidden_3
-            hidden_nodes_4 = n_hidden_4
-            num_labels = num_classes
             batch_size = 128
-            num_features = num_input
-            learning_rate = 0.00001 # potentially adaptive learning rate
+            #learning_rate = 0.00001 # potentially adaptive learning rate
 
-            self.input_layer = [num_features, hidden_nodes_1, hidden_nodes_2, hidden_nodes_3, hidden_nodes_4]
-            self.output_layer = [hidden_nodes_1, hidden_nodes_2, hidden_nodes_3, hidden_nodes_4, num_labels]
+            self.input_layer = [num_input] + hidden_layers[0:len(hidden_layers)-1]  #[num_features, hidden_nodes_1, hidden_nodes_2] #, hidden_nodes_3, hidden_nodes_4]
+            self.output_layer = hidden_layers[0:len(hidden_layers)-1] + [num_classes] #[hidden_nodes_1, hidden_nodes_2,num_labels] #, hidden_nodes_3, hidden_nodes_4, num_labels]
 
             with self.graph.as_default():
-                self.tf_train_dataset = tf.placeholder(tf.float64, shape = (batch_size, num_features))
+                self.tf_train_dataset = tf.placeholder(tf.float64, shape = (batch_size, num_input))
                 self.tf_train_labels = tf.placeholder(tf.float64, shape = (batch_size))
                 self.tf_train_labels_probas = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
 
@@ -55,10 +48,11 @@ class GenericModel(object):
                 #self.loss =  tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(self.model_scores,self.model_scores, pos_weight=10.0))
                 #,targets=tf.cast(self.tf_train_labels, dtype=tf.int32)))
                 #self.loss =  tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.model_scores, labels=tf.cast(self.tf_train_labels, dtype=tf.int32)))
-                self.loss = tf.reduce_mean((tf.nn.weighted_cross_entropy_with_logits(tf.cast(self.tf_train_labels_probas, dtype=tf.float64),self.model_scores, pos_weight=10.0)))
+                self.loss = tf.reduce_mean((tf.nn.weighted_cross_entropy_with_logits(tf.cast(self.tf_train_labels_probas, dtype=tf.float64),self.model_scores, pos_weight=1.0)))
 
                 # Optimizer
-                self.optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.loss)
+                #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.loss)
+                self.optimizer = tf.train.AdamOptimizer().minimize(self.loss)
 
                 # Predictions
                 #test_prediction = tf.nn.softmax(self.four_layer_network_(tf_test_dataset))
@@ -83,16 +77,13 @@ class GenericModel(object):
             chain up fn(...f1((f0(x) + b0)+b1) + bn
             """
 
-            input_layer = tf.matmul(data, self.weights[0])
-            hidden_1 = tf.nn.relu(input_layer + self.biases[0])
-            layer_2 = tf.matmul(hidden_1, self.weights[1])
-            hidden_2 = tf.nn.relu(layer_2 + self.biases[1])
-            layer_3 = tf.matmul(hidden_2, self.weights[2])
-            hidden_3 = tf.nn.relu(layer_3 + self.biases[2])
-            layer_4 = tf.matmul(hidden_3, self.weights[3])
-            hidden_4 = tf.nn.relu(layer_4 + self.biases[3])
+            previous_layer = tf.matmul(data, self.weights[0])
 
-            output_layer = tf.matmul(hidden_4, self.weights[4]) + self.biases[4]
+            for hidden in range(len(self.weights)-1):
+                hidden_layer = tf.nn.relu(previous_layer + self.biases[hidden])
+                previous_layer = tf.matmul(hidden_layer, self.weights[hidden+1])
+
+            output_layer = previous_layer + self.biases[len(self.biases)-1]
 
             return output_layer
 
