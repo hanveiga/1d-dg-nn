@@ -510,8 +510,8 @@ subroutine limiter(u)
       call limiter_tvd(u_lim,M)
     else if (limiter_type =='HIO') then
       call limiter_hio(u_lim)
-    !else if (limiter_type == 'NNM') then 
-    !  call limiter_ml1(u_lim)
+    else if (limiter_type == 'NNM') then 
+      call limiter_ml1(u_lim)
     !else if (limiter_type == 'NNH') then
     !  call limiter_ml2(u_lim)
     end if
@@ -577,22 +577,25 @@ subroutine limiter_ml1(u)
      call get_nodes(u,un)
      call compute_primitive(un,wn,gamma,nvar)
      call get_modes(wn,w)
+     w=u
      !call compute_primitive(u(1:nvar,1,icell),w,gamma,nvar)
      !do jvar = 1,nvar
        call detect_shock(w(jvar,:,icell), w(jvar,:,iright), w(jvar,:,ileft),label) ! gets rid of having to use parameters from ml
        !write(*,*) label
        limiting_ml = 0
-       do lab = 1,nvar
-         if (label(lab) == 1) then
+       !do lab = 1,nvar
+         if (label(1) == 1) then
             limiting_ml = 1
+            write(*,*) 'limiting'
          end if
-       end do
+       !end do
 
        if (limiting_ml == 1) then
          ! apply TVD limiter
          !write(*,*) 'gonna limit'
          dx = boxlen/dble(nx)
          i = 1
+         w=0
          call compute_primitive(u(1:nvar,1,icell),w,gamma,nvar)
          ! Loop only over high-order modes
          uL(1:nvar)=(u(1:nvar,i,icell)-u(1:nvar,i,ileft))
@@ -605,7 +608,8 @@ subroutine limiter_ml1(u)
          call cons_to_char(uM,wM(1:nvar,i+1),w,nvar,gamma)
          w_lim=wM
          ! Loop over variables
-         do ivar=1,nvar
+         !do ivar=1,nvar
+         ivar = 1
             !if (abs(wM(ivar,2)).LE.(M*dx**2)) then
             !  wM(ivar,2) = wM(ivar,2)
             !else
@@ -615,11 +619,11 @@ subroutine limiter_ml1(u)
                 wM(ivar,2) = 0.0
               end if
             !end if
-         end do
+         !end do
          ! End loop over variables
          ! Compute conservative variables
          ! Loop only over high-order modes
-         i = 1
+         !i = 1
          call char_to_cons(w_lim(1:nvar,i+1),u_lim(1:nvar,i+1,icell),w,nvar,gamma)
 
        else
@@ -630,21 +634,21 @@ subroutine limiter_ml1(u)
    end do
 
   ! Check for unphysical values in the limited states
-  do icell=1,nx
+  !do icell=1,nx
      ! Compute primitive variable
-     call compute_primitive(u_lim(1:nvar,1,icell),w,gamma,nvar)
-     u_left(1:nvar)=0.0; u_right(1:nvar)=0.0
+     !call compute_primitive(u_lim(1:nvar,1,icell),w,gamma,nvar)
+     !u_left(1:nvar)=0.0; u_right(1:nvar)=0.0
      ! Loop over modes
-     do i=1,n
-        u_left(1:nvar)=u_left(1:nvar)+u_lim(1:nvar,i,icell)*(-1.0)**(i-1)*sqrt(2.0*dble(i)-1.0)
-        u_right(1:nvar)=u_right(1:nvar)+u_lim(1:nvar,i,icell)*sqrt(2.0*dble(i)-1.0)
-     end do
-     call cons_to_prim(u_left,w_left,w,nvar,gamma)
-     call cons_to_prim(u_right,w_right,w,nvar,gamma)
-     if(w_left(1)<1d-10.OR.w_right(1)<1d-10.OR.w_left(3)<1d-10.OR.w_left(3)<1d-10)then
-        u_lim(1:nvar,2:n,icell)=0.0
-     endif
-  end do
+     !do i=1,n
+     !   u_left(1:nvar)=u_left(1:nvar)+u_lim(1:nvar,i,icell)*(-1.0)**(i-1)*sqrt(2.0*dble(i)-1.0)
+     !   u_right(1:nvar)=u_right(1:nvar)+u_lim(1:nvar,i,icell)*sqrt(2.0*dble(i)-1.0)
+     !nd do
+     !call cons_to_prim(u_left,w_left,w,nvar,gamma)
+     !call cons_to_prim(u_right,w_right,w,nvar,gamma)
+     !if(w_left(1)<1d-10.OR.w_right(1)<1d-10.OR.w_left(3)<1d-10.OR.w_left(3)<1d-10)then
+     !   u_lim(1:nvar,2:n,icell)=0.0
+     !endif
+  !end do
 
    u = u_lim
 end subroutine limiter_ml1
@@ -1192,6 +1196,12 @@ subroutine condinit(x,uu)
            ww(2)=-3.549648
            ww(3)=1.0
         endif
+    case(7)
+        ! gaussian blob
+        ww(1)=1.+3.*exp(-100.*(x-0.5)**2)
+        ww(2)=1.0
+        ww(3)=1.0
+
      end select
 
      ! Convert primitive to conservative
