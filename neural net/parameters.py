@@ -1,19 +1,21 @@
 # Network Parameters
-#n_hidden_1 = 256 # 1st layer number of neurons
-#n_hidden_2 = 128 # 2nd layer number of neurons
-#n_hidden_3 = 64 # 3th layer number of neurons
-#n_hidden_4 = 32 # 4th layer number of neurons
-hidden_layers = [128,128,64]
-num_input = 8 # inputs  for features
+hidden_layers = [512,256,256,128]
+num_input = 13 # inputs  for features
 num_classes = 2 # binary classification
 
-LEARNING_RATE = 0.000005
-num_steps = 20000
+LEARNING_RATE = 0.000005 # currently using adam so this is just to initialise
+num_steps = 15000
 batch_size = 128
 display_step = 1000
 
-dataset_path = 'dataset07.2.18.csv'
-identifier = '_20.3.18_2layers_'
-label_column = 9 # 10th
+pos_weight = 1.0
+
+nNeurons = sum(hidden_layers)
+
+dataset_path = '../dataset/dataset_unlimited_0.01_20.4.18.csv'
+datan = 'dataset_unlimited_0.01_20.4.18'
+normalL = True
+identifier = 'models/l'+str(len(hidden_layers))+'_w'+str(pos_weight)+'_data'+datan+'_norm'+ str(normalL) +'_nNeurons'+str(nNeurons)+'/'
+label_column = 14 #-1 # 10th
 start_f = 1
-end_f = 9
+end_f = 14

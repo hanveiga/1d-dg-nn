@@ -15,10 +15,9 @@ class GenericModel(object):
 
         def make_model(self):
             batch_size = 128
-            #learning_rate = 0.00001 # potentially adaptive learning rate
 
-            self.input_layer = [num_input] + hidden_layers[0:len(hidden_layers)-1]  #[num_features, hidden_nodes_1, hidden_nodes_2] #, hidden_nodes_3, hidden_nodes_4]
-            self.output_layer = hidden_layers[0:len(hidden_layers)-1] + [num_classes] #[hidden_nodes_1, hidden_nodes_2,num_labels] #, hidden_nodes_3, hidden_nodes_4, num_labels]
+            self.input_layer = [num_input] + hidden_layers  #[num_features, hidden_nodes_1, hidden_nodes_2] #, hidden_nodes_3, hidden_nodes_4]
+            self.output_layer = hidden_layers + [num_classes] #[hidden_nodes_1, hidden_nodes_2,num_labels] #, hidden_nodes_3, hidden_nodes_4, num_labels]
 
             with self.graph.as_default():
                 self.tf_train_dataset = tf.placeholder(tf.float64, shape = (batch_size, num_input))
@@ -27,7 +26,6 @@ class GenericModel(object):
 
                 self.tf_train_labels_pred = tf.placeholder(tf.float64, shape = (batch_size))
                 self.tf_train_labels_probas_pred = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
-
 
                 # Initialize weights and biases for computation graph
                 labels = [str(a) for a in range(len(self.output_layer))]
@@ -43,12 +41,7 @@ class GenericModel(object):
 
                 # weighted class loss
                 targets=tf.cast(self.tf_train_labels_probas, dtype=tf.float64)
-                #yout = tf.nn.softmax(self.model_scores)
-                #self.loss = -tf.reduce_mean(targets*tf.log(yout)*tf.constant([1.,200.],dtype=tf.float64))
-                #self.loss =  tf.reduce_mean(tf.nn.weighted_cross_entropy_with_logits(self.model_scores,self.model_scores, pos_weight=10.0))
-                #,targets=tf.cast(self.tf_train_labels, dtype=tf.int32)))
-                #self.loss =  tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.model_scores, labels=tf.cast(self.tf_train_labels, dtype=tf.int32)))
-                self.loss = tf.reduce_mean((tf.nn.weighted_cross_entropy_with_logits(tf.cast(self.tf_train_labels_probas, dtype=tf.float64),self.model_scores, pos_weight=1.0)))
+                self.loss = tf.reduce_mean((tf.nn.weighted_cross_entropy_with_logits(tf.cast(self.tf_train_labels_probas, dtype=tf.float64),self.model_scores, pos_weight=pos_weight)))
 
                 # Optimizer
                 #self.optimizer = tf.train.GradientDescentOptimizer(learning_rate).minimize(self.loss)
@@ -56,27 +49,26 @@ class GenericModel(object):
 
                 # Predictions
                 #test_prediction = tf.nn.softmax(self.four_layer_network_(tf_test_dataset))
+                #self.predict_op = tf.nn.sigmoid(self.four_layer_network_(self.tf_train_dataset))
                 self.predict_op = tf.nn.softmax(self.four_layer_network_(self.tf_train_dataset))
 
                 self.acc, self.acc_op = tf.metrics.accuracy(labels=self.tf_train_labels, predictions=self.tf_train_labels_pred, name="accuracy")
                 self.recall, self.recall_op = tf.metrics.recall(labels=self.tf_train_labels, predictions=self.tf_train_labels_pred, name="accuracy")
                 self.precision, self.precision_op = tf.metrics.precision(labels=self.tf_train_labels, predictions=self.tf_train_labels_pred, name="accuracy")
+                
                 # Isolate the variables stored behind the scenes by the metric operation
                 running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="accuracy")
 
                 # Define initializer to initialize/reset running variables
                 self.running_vars_initializer = tf.variables_initializer(var_list=running_vars)
 
-
         def train_prediction(self):
-            # is this necessary?
             return tf.nn.softmax(self.model_scores)
 
         def four_layer_network_(self, data):
             """
             chain up fn(...f1((f0(x) + b0)+b1) + bn
             """
-
             previous_layer = tf.matmul(data, self.weights[0])
 
             for hidden in range(len(self.weights)-1):
@@ -88,6 +80,7 @@ class GenericModel(object):
             return output_layer
 
         def save_weights(self, weight, filename):
+            print weight.shape
             np.savetxt(filename+'.txt',weight,delimiter=';')
 
         def load_weights(self, filename):
@@ -100,11 +93,10 @@ class GenericModel(object):
             pass
 
 
-def save_weights(weight, filename):
-    np.savetxt(filename+'.txt',weight,delimiter=';')
-
-def load_weights(filename):
-    return np.loadtxt(filename+'.txt',dtype=np.float32,delimiter=';')
+#def save_weights(weight, filename):
+#    np.savetxt(filename+'.txt',weight,delimiter=';')
+#def load_weights(filename):
+#    return np.loadtxt(filename+'.txt',dtype=np.float32,delimiter=';')
 
 def accuracy(predictions, labels):
     preds_correct_boolean =  np.argmax(predictions, 1) == np.argmax(labels, 1)
