@@ -1,6 +1,6 @@
-F90=gfortran
+F90=gfortran -lblas -llapack #-freal-4-real-16 
 OPT = -O3
-MODEL = dg
+MODEL = dg_mod
 
 execname: $(MODEL).o legendre.o dg_commons.o ml_parameters.o nnlimiter.o
 	    $(F90) -o dg $(MODEL).o legendre.o dg_commons.o ml_parameters.o nnlimiter.o
