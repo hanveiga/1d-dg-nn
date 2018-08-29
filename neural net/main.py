@@ -24,6 +24,7 @@ def main():
     graph = model.get_graph()
 
     # Start training
+    best_loss  = 1000
     with tf.Session(graph=graph) as session:
         tf.global_variables_initializer().run()
         session.run(model.running_vars_initializer)
@@ -55,6 +56,13 @@ def main():
                 recall = session.run(model.recall)
                 precision = session.run(model.precision)
                 print "Accuracy: %f, Recall: %f, Precision: %f" %(accuracy, recall, precision)
+                if (l < best_loss) and step > 5000:
+                    for indx in range(len(model.weights)):
+                        w = session.run(model.weights[indx])
+                        b = session.run(model.biases[indx])
+                        model.save_weights(w,identifier+'best_w'+str(indx))
+                        model.save_weights(b,identifier+'best_b'+str(indx))
+                    best_loss = l
 
         # After training, save last iteration of the model
         for indx in range(len(model.weights)):
