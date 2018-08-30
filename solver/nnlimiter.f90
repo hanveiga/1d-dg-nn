@@ -3,7 +3,7 @@ subroutine detect_shock(uc_modes, up_modes, um_modes,label)
   use dg_commons
   ! performs the shock detection and returns a label
   REAL(KIND=8), DIMENSION(1:nvar, 1:n):: uc_modes, up_modes, um_modes!, reconstruct_cell
-  REAL(KIND=8), DIMENSION(1:nvar,1:n_input):: feature_vector
+  REAL(KIND=8), DIMENSION(1:n_input,1:nvar):: feature_vector
   integer,dimension(1:nvar)::label
   feature_vector = 0.0
   call generate_features(uc_modes,up_modes,um_modes,feature_vector)
@@ -79,7 +79,7 @@ subroutine generate_features(uc_modes, up_modes, um_modes, feature_vector)
   use dg_commons
   IMPLICIT NONE
 
-  REAL(KIND=8), DIMENSION(1:nvar, 1:n_input):: feature_vector
+  REAL(KIND=8), DIMENSION(1:n_input, 1:nvar):: feature_vector
   REAL(KIND=8), DIMENSION(1:nvar, 1:n):: uc_modes, up_modes, um_modes!, reconstruct_cell
   REAL(KIND=8), dimension(1:nvar):: u_c, u_m, u_p, du_m, du_p, u_f_p, u_f_m, du!, reconstruct_cell
   REAL(KIND=8), dimension(1:nvar):: u_m_f_p, u_p_f_m
@@ -152,7 +152,7 @@ subroutine generate_features(uc_modes, up_modes, um_modes, feature_vector)
       u_p_f_m0 = (u_p_f_m(ivar)-min_u)/(max_u-min_u)
     end if
     
-    feature_vector(ivar,:) = (/ h, u_c0, u_m0,u_p0, du0, du_m0, du_p0, u_f_p0, u_f_m0, u_m_f_p0, u_p_f_m0 /)
+    feature_vector(:,ivar) = (/ h, u_c0, u_m0,u_p0, du0, du_m0, du_p0, u_f_p0, u_f_m0, u_m_f_p0, u_p_f_m0 /)
   end do
 
 end subroutine
@@ -182,130 +182,209 @@ subroutine load_nn()
     use dg_commons
     implicit none
     integer::i,j
+    real(kind=8)::read_temp
+
+    !OPEN(1,file=trim(model_folder)//'b5.txt')
+    !DO i=1, SIZE(b5)
+    !   READ(1,*) b5(i)
+    !ENDDO
+    !CLOSE(1)
+
+
+
+    ! Reading stuff in a more natural manner !this should be the transpose of the stuff above
 
     OPEN(1,file=trim(model_folder)//'w0.txt')
     write(*,*) 'opened'
-    DO i=1,SIZE(coeff0,1)
-       READ(1,*) (coeff0(i,j),j=1,SIZE(coeff0,2))
+    DO i=1,SIZE(coeff01,2)
+       READ(1,*) (coeff01(j,i),j=1,SIZE(coeff01,1))
        write(*,*) 'reading'
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'w1.txt')
-    DO i=1,SIZE(coeff1,1)
-       READ(1,*) (coeff1(i,j),j=1,SIZE(coeff1,2))
+    DO i=1,SIZE(coeff11,2)
+       READ(1,*) (coeff11(j,i),j=1,SIZE(coeff11,1))
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'w2.txt')
-    DO i=1,SIZE(coeff2,1)
-       READ(1,*) (coeff2(i,j),j=1,SIZE(coeff2,2))
+    DO i=1,SIZE(coeff21,2)
+       READ(1,*) (coeff21(j,i),j=1,SIZE(coeff21,1))
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'w3.txt')
-    DO i=1,SIZE(coeff3,1)
-       READ(1,*) (coeff3(i,j),j=1,SIZE(coeff3,2))
+    DO i=1,SIZE(coeff31,2)
+       READ(1,*) (coeff31(j,i),j=1,SIZE(coeff31,1))
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'w4.txt')
-    DO i=1,SIZE(coeff4,1)
-       READ(1,*) (coeff4(i,j),j=1,SIZE(coeff4,2))
+    DO i=1,SIZE(coeff41,2)
+       READ(1,*) (coeff41(j,i),j=1,SIZE(coeff41,1))
     ENDDO
     CLOSE(1)
 
-    OPEN(1,file=trim(model_folder)//'w5.txt')
-    DO i=1,SIZE(coeff5,1)
-       READ(1,*) (coeff5(i,j),j=1,SIZE(coeff5,2))
-    ENDDO
-    CLOSE(1)
+    !OPEN(1,file=trim(model_folder)//'w5.txt')
+    !DO i=1,SIZE(coeff51,2)
+    !   READ(1,*) (coeff51(j,i),j=1,SIZE(coeff51,1))
+    !ENDDO
+    !CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'b0.txt')
-    DO i=1, SIZE(b0)
-       READ(1,*) b0(i)
+    DO i=1, SIZE(b01,1)
+       READ(1,*) read_temp
+       b01(i,:) = read_temp
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'b1.txt')
-    DO i=1, SIZE(b1)
-       READ(1,*) b1(i)
+    DO i=1, SIZE(b11,1)
+       READ(1,*) read_temp
+       b11(i,:) = read_temp
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'b2.txt')
-    DO i=1, SIZE(b2)
-       READ(1,*) b2(i)
+    DO i=1, SIZE(b21,1)
+       READ(1,*) read_temp
+       b21(i,:) = read_temp
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'b3.txt')
-    DO i=1, SIZE(b3)
-       READ(1,*) b3(i)
+    DO i=1, SIZE(b31,1)
+       READ(1,*) read_temp
+       b31(i,:) = read_temp
     ENDDO
     CLOSE(1)
 
     OPEN(1,file=trim(model_folder)//'b4.txt')
-    DO i=1, SIZE(b4)
-       READ(1,*) b4(i)
+    DO i=1, SIZE(b41,1)
+       READ(1,*) read_temp
+       b41(i,:) = read_temp
     ENDDO
     CLOSE(1)
 
-    OPEN(1,file=trim(model_folder)//'b5.txt')
-    DO i=1, SIZE(b5)
-       READ(1,*) b5(i)
-    ENDDO
-    CLOSE(1)
+    !OPEN(1,file=trim(model_folder)//'b5.txt')
+    !DO i=1, SIZE(b51,1)
+    !   READ(1,*) read_temp
+    !   b51(i,:) = read_temp
+    !ENDDO
+    !CLOSE(1)
+
+    !print*, maxval(coeff0 - transpose(coeff01)), minval(coeff0 - transpose(coeff01))
+    !print*, maxval(coeff1 - transpose(coeff11)), minval(coeff1 - transpose(coeff11))
+    !print*, maxval(coeff2 - transpose(coeff21)), minval(coeff2 - transpose(coeff21))
+    !print*, maxval(coeff3 - transpose(coeff31)), minval(coeff3 - transpose(coeff31))
+    !print*, maxval(coeff4 - transpose(coeff41)), minval(coeff4 - transpose(coeff41))
+    !print*, maxval(coeff5 - transpose(coeff51)), minval(coeff5 - transpose(coeff51))
+
+    !pause
+    
+    !print*, coeff1(1,:)
+    !print*,coeff11(:,1)
+    ! probably ok
+
 end subroutine
 
 subroutine ml_shock_detector(x,label)
   use ml_parameters
   use dg_commons
   IMPLICIT NONE
-  REAL(KIND=8), DIMENSION(1:nvar,1:n_input):: x
+  REAL(KIND=8), DIMENSION(1:n_input,1:nvar):: x
+  !REAL(KIND=8), DIMENSION(1:n_input,1:nvar,1:n_input):: x_transposed
   real(kind=8)::alpha=1.0,beta=0.0
 
   INTEGER,dimension(1:nvar)::label
 
   integer:: i,j, var
 
-  do var = 1,nvar 
+  !x_transposed = transpose(x)
+
+  !do var = 1,nvar 
   !var=1
     !y1=MAX(MATMUL(x(var, :) ,coeff0)+b0,0.)
     !y2=MAX(MATMUL(y1,coeff1)+b1,0.)
     !y3=MAX(MATMUL(y2,coeff2)+b2,0.)
     !y4=MAX(MATMUL(y3,coeff3)+b3,0.)
     !y5=MAX(MATMUL(y4,coeff4)+b4,0.)
+    
+    !print*, y1
+    !y1 = MAX(MATMUL(coeff01,x_transposed(:,var))+b01(:,var),0.)
+    !print*, y1
 
+    !pause
     ! getting rid of matmul
     ! output layer: softmax
     !y6 = MATMUL(y5,coeff5)+b5
     !y6 = exp(y6-maxval(y6))/sum(exp(y6-maxval(y6)))
     !write(*,*) y6
 
+    !CALL DGEMM('N','N',1,layer1,n_input,alpha,x(var,:),1,coeff0,n_input,beta,y1,1)
+    !y1 = max(y1+b0,0.)
+    !CALL DGEMM('N','N',1,layer2,layer1,alpha,y1,1,coeff1,layer1,beta,y2,1)
+    !y2 = max(y2+b1,0.)
+    !CALL DGEMM('N','N',1,layer3,layer2,alpha,y2,1,coeff2,layer2,beta,y3,1)
+    !y3 = max(y3+b2,0.)
+    !CALL DGEMM('N','N',1,layer4,layer3,alpha,y3,1,coeff3,layer3,beta,y4,1)
+    !y4 = max(y4+b3,0.)
+    !CALL DGEMM('N','N',1,layer5,layer4,alpha,y4,1,coeff4,layer4,beta,y5,1)
+    !y5 = max(y5+b4,0.)
 
-    CALL DGEMM('N','N',1,layer1,n_input,alpha,x(var,:),1,coeff0,n_input,beta,y1,1)
-    y1 = max(y1+b0,0.)
-    CALL DGEMM('N','N',1,layer2,layer1,alpha,y1,1,coeff1,layer1,beta,y2,1)
-    y2 = max(y2+b1,0.)
-    CALL DGEMM('N','N',1,layer3,layer2,alpha,y2,1,coeff2,layer2,beta,y3,1)
-    y3 = max(y3+b2,0.)
-    CALL DGEMM('N','N',1,layer4,layer3,alpha,y3,1,coeff3,layer3,beta,y4,1)
-    y4 = max(y4+b3,0.)
-    CALL DGEMM('N','N',1,layer5,layer4,alpha,y4,1,coeff4,layer4,beta,y5,1)
-    y5 = max(y5+b4,0.)
+    !CALL DGEMM('N','N',1,nclass,layer5,alpha,y5,1,coeff5,layer5,beta,y6,1)
+    !y6 = y6 + b5
+    !y6 = exp(y6-maxval(y6))/sum(exp(y6-maxval(y6)))
 
-    CALL DGEMM('N','N',1,nclass,layer5,alpha,y5,1,coeff5,layer5,beta,y6,1)
-    y6 = exp(y6-maxval(y6))/sum(exp(y6-maxval(y6)))
+
+    ! optimized
+
+    ! gemm('N', 'N', m, n, k, 1.0, a, lda, b, ldb, 0.0, c, ldc)
+
+    CALL DGEMM('N','N',layer1,nvar,n_input,alpha,coeff01,layer1,x,n_input,beta,y11,layer1)
+    y11 = max(y11+b01,0.)
+    !print*, maxval(abs(y1 - y11(:,var)))
+    CALL DGEMM('N','N',layer2,nvar,layer1,alpha,coeff11,layer2,y11,layer1,beta,y21,layer2)
+    y21 = max(y21+b11,0.)
+    !print*, maxval(abs(y2 - y21(:,var)))
+
+    CALL DGEMM('N','N',layer3,nvar,layer2,alpha,coeff21,layer3,y21,layer2,beta,y31,layer3)
+    y31 = max(y31+b21,0.)
+    !print*, maxval(abs(y3 - y31(:,var)))
+
+    CALL DGEMM('N','N',layer4,nvar,layer3,alpha,coeff31,layer4,y31,layer3,beta,y41,layer4)
+    y41 = max(y41+b31,0.)
+    !print*, maxval(abs(y4 - y41(:,var)))
+
+    !CALL DGEMM('N','N',layer5,nvar,layer4,alpha,coeff41,layer5,y41,layer4,beta,y51,layer5)
+    !y51 = max(y51+b41,0.)
+    !print*, maxval( abs(y5 - y51(:,var)))
+
+    !pause
+
+    CALL DGEMM('N','N',nclass,nvar,layer4,alpha,coeff41,nclass,y41,layer4,beta,y51,nclass)
+    y61 = y51 + b51
+    
+
+
     !write(*,*) y6
     !pause
 
+    do var = 1, nvar
+      y61(:,var) = exp(y61(:,var)-maxval(y61(:,var)))/sum(exp(y61(:,var)-maxval(y61(:,var))))
+      !print*,y61(:,var)
+      if (y61(2,var) >= 0.5) then
+        label(var) = 1
+      else
+        label(var) = 0
+      end if
+    end do
+    !if ((y61(2,var)>=0.5).and.( label(var) == 0)) then
+    !  print*, y61(:,var), y6
+    !  print*, 'thisis a big problem' !!! BUG
+    !  pause
+    !end if
 
-    if (y6(2) >= 0.5) then
-      label(var) = 1
-    else
-      label(var) = 0
-    end if
-
-  end do
+  !end do
 END subroutine ml_shock_detector
