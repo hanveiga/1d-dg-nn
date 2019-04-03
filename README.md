@@ -83,3 +83,9 @@ To use the limiter, select the parameter
 ~~~
 limiter = 'NN'
 ~~~
+
+# 2-dimensional version
+
+As the numerical solver codes I am using have not been developed by myself (either as a group effort or my kind advisor gave me a code :-D ), I can't make the numerical codes public, but the neural network related things are online, and the dataset can be found on dropbox:
+
+https://www.dropbox.com/s/qk8lubllro4bey8/automated_11.01.19.csv?dl=0
