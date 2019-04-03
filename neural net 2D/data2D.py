@@ -51,7 +51,7 @@ class DataSet(object):
     self._labels_probas = labels_probas
 
 
-def load_triangle_data(filepath,filepath2, normalised=False):
+def load_triangle_data(filepath,filepath2, lam=1.0, normalised=False):
   dtype = dtypes.float32 # this doesn't matter
   reshape=True
   my_data = np.genfromtxt(filepath)
@@ -74,7 +74,7 @@ def load_triangle_data(filepath,filepath2, normalised=False):
   my_data2 = my_data2[0:nTot,:]
 
   #proportion of old dataset to take
-  lamb = 0.0
+  lamb = lam
 
   #nTarget,_ = my_data.shape
   #nSource,_ = my_data2.shape
@@ -100,7 +100,6 @@ def load_triangle_data(filepath,filepath2, normalised=False):
   test = DataSet(test_data, test_labels, dtype=dtype, reshape=reshape)
 
   return base.Datasets(train=train, validation=validation, test=test)
-
 
 
 def load_rd_quads(target_filepath,source_filepath, alpha = 0.0, normalised=False):
@@ -148,7 +147,6 @@ def load_rd_quads(target_filepath,source_filepath, alpha = 0.0, normalised=False
 
   return base.Datasets(train=train, validation=validation, test=test)
 
-
 def normalise_data_triangle(text_file):
   #dataset.append([xv,h, u_c, u_m,u_p, du, du_m, du_p, u_f_p, u_f_m, u_m_f_p, u_p_f_m, u_max, u_min, label_hio])
   #np.random.RandomState(seed=1)
@@ -159,7 +157,7 @@ def normalise_data_triangle(text_file):
 
     if (u_max == u_min):
         thrs = np.random.uniform(0,1)
-        if thrs > 0.9:
+        if thrs > 0.6:
             normalised.append(entry)
         else:
             continue
@@ -293,17 +291,19 @@ def augment_data_normalised(text_file):
 
          dx = entry[0]
          dy = entry[1]
-         fudge_label = 0
-         if ( abs(u_max - u_min) < 0.5*sqrt(dx*dy)*(abs(u_max)+abs(u_min)) ):
-             print(abs(u_max - u_min))
-             print(0.5*sqrt(dx*dy)*(abs(u_max)+abs(u_min)))
-             # f(abs(u_max-u_min).le.(0.5*sqrt(e2%volume)*(abs(u_max)+abs(u_min)))) then
-             thrs = np.random.uniform(0,1)
-             if thrs < 0.8:
-                 continue
-             else:
-                 fudge_label = 1
 
+         """
+         #fudge_label = 0
+         #if ( abs(u_max - u_min) < 0.5*np.sqrt(dx*dy)*(abs(u_max)+abs(u_min)) ):
+              #print(abs(u_max - u_min))
+              #print(0.5*np.sqrt(dx*dy)*(abs(u_max)+abs(u_min)))
+              # f(abs(u_max-u_min).le.(0.5*sqrt(e2%volume)*(abs(u_max)+abs(u_min)))) then
+              thrs = np.random.uniform(0,1)
+              if thrs < 0.3:
+                  continue
+              else:
+              fudge_label = 1
+         """
 
 
 
@@ -334,17 +334,18 @@ def augment_data_normalised(text_file):
          mysides = [uc_f_b, uc_f_r, uc_f_t, uc_f_l]
          outsides = [ub_f_t,ur_f_l,ut_f_b,ul_f_r]
 
-         if (fudge_label):
-             label_hio = 0
-         else:
-             label_hio = entry[23]
+         label_hio = entry[23]
 
          #normal = [xv,h, u_c, u_m,u_p, du, du_m, du_p, u_f_p, u_f_m, u_m_f_p, u_p_f_m, u_max, u_min, label_hio]
          normal = [dx, dy, u_c, u_l, u_r, u_t, u_b, uc_f_r, uc_f_l, uc_f_t, uc_f_b, ul_f_r, ur_f_l, ut_f_b, ub_f_t, u_max, u_min, du_dx, du_dy, du_dx_r, du_dx_l, du_dy_b, du_dy_t, label_hio]
          normalised.append(normal)
 
-         if label_hio == 1:
-             for perm in permutation:
+         thrs = np.random.uniform(0,1)
+         if thrs < 0.5:
+               continue
+
+         #if label_hio == 1:
+         for perm in permutation:
 
                  u_c = u_c
                  u_l = means[perm[3]] #map2(entry[3],u_max,u_min)
@@ -387,26 +388,25 @@ def augment_data(text_file):
          u_max = entry[15] #np.max([entry[2],entry[3],entry[4],entry[7],entry[8]])
          u_min = entry[16] #np.min([entry[2],entry[3],entry[4],entry[7],entry[8]])
 
-         """if (u_max == u_min):
+         if (u_max == u_min):
              thrs = np.random.uniform(0,1)
              if thrs < 0.9:
                  continue
 
          dx = entry[0]
-         dy = entry[1]"""
-
-         dx = entry[0]
          dy = entry[1]
-         fudge_label = 0
-         if ( abs(u_max - u_min) < 0.5*np.sqrt(dx*dy)*(abs(u_max)+abs(u_min)) ):
+         """
+         #fudge_label = 0
+         #if ( abs(u_max - u_min) < 0.3*np.sqrt(dx*dy)*(abs(u_max)+abs(u_min)) ):
               #print(abs(u_max - u_min))
               #print(0.5*np.sqrt(dx*dy)*(abs(u_max)+abs(u_min)))
               # f(abs(u_max-u_min).le.(0.5*sqrt(e2%volume)*(abs(u_max)+abs(u_min)))) then
               thrs = np.random.uniform(0,1)
-              if thrs < 0.6:
+              if thrs < 0.7:
                   continue
-              else:
-                  fudge_label = 1
+              #else:
+              #      fudge_label = 1
+         """
 
          u_c = map2(entry[2],u_max,u_min)
          u_l = map2(entry[3],u_max,u_min)
@@ -437,22 +437,23 @@ def augment_data(text_file):
 
          #label_hio = entry[17]
 
-         if (fudge_label==1):
-              label_hio = 0
-         else:
-              label_hio = entry[17]
+         #if (fudge_label==1):
+         #      label_hio = 0
+         #else:
+         label_hio = entry[17]
 
          #normal = [xv,h, u_c, u_m,u_p, du, du_m, du_p, u_f_p, u_f_m, u_m_f_p, u_p_f_m, u_max, u_min, label_hio]
          normal = [dx, dy, u_c, u_l, u_r, u_t, u_b, uc_f_r, uc_f_l, uc_f_t, uc_f_b, ul_f_r, ur_f_l, ut_f_b, ub_f_t, u_max, u_min, du_dx, du_dy, du_dx_r, du_dx_l, du_dy_b, du_dy_t, label_hio]
          normalised.append(normal)
 
          thrs = np.random.uniform(0,1)
-         if label_hio == 1:
-             if thrs < 0.5:
-                       continue
-         elif label_hio == 0:
-             if thrs < 0.85:
-                       continue
+
+         if label_hio == 0:
+               if thrs < 0.95:
+                   continue
+         elif label_hio == 1:
+               if thrs < 0.5:
+                   continue
 
          for perm in permutation:
 
@@ -487,12 +488,24 @@ def augment_data(text_file):
 def map2(value,maxvalue,minvalue):
   """ Map function values to [-1,1] interval,
   the derivatives are rescaled but not mapped to [-1,1] """
-  if (maxvalue == minvalue) and (maxvalue != 0):
-    norm = value/float(maxvalue)
-  elif (maxvalue == 0) and (maxvalue == minvalue):
+
+  #if (maxvalue == minvalue) and (maxvalue != 0):
+#    norm = value/float(2*maxvalue)
+  if (maxvalue == 0) and (maxvalue == minvalue):
     norm = value
   else:
-    norm = (value-minvalue)/(maxvalue-minvalue) +  -1.0*(maxvalue-value)/(maxvalue-minvalue)
+    #norm = (value-minvalue)/(maxvalue-minvalue) +  -1.0*(maxvalue-value)/(maxvalue-minvalue)
+    #if maxvalue == 0:
+    #    sg = 1
+    #else:
+    #    sg = np.sign(maxvalue)
+
+    #mx = sg*np.max(np.abs([maxvalue,minvalue]))
+    #mn = -mx
+    norm = (value-minvalue)/float(abs(maxvalue)+abs(minvalue)) - 1.0*(maxvalue-value)/float(abs(maxvalue)+abs(minvalue))
+
+    #norm = (value-mn)/float(2*mx) - 1.0*(mx-value)/float(2*mx)
+    #norm = (value-minvalue)/(maxvalue-minvalue) +  -1.0*(maxvalue-value)/(maxvalue-minvalue)
 
   return norm
 

@@ -14,7 +14,7 @@ class GenericModel(object):
             # maybe refactor later
 
         def make_model(self):
-            batch_size = 128
+            #batch_size = batch_size
 
             self.input_layer = [num_input] + hidden_layers  #[num_features, hidden_nodes_1, hidden_nodes_2] #, hidden_nodes_3, hidden_nodes_4]
             self.output_layer = hidden_layers + [num_classes] #[hidden_nodes_1, hidden_nodes_2,num_labels] #, hidden_nodes_3, hidden_nodes_4, num_labels]
@@ -72,7 +72,6 @@ class GenericModel(object):
                 self.recall_test, self.recall_test_op = tf.metrics.recall(labels=self.tf_test_labels, predictions=self.tf_test_labels_pred, name="accuracy_test")
                 self.precision_test, self.precision_test_op = tf.metrics.precision(labels=self.tf_test_labels, predictions=self.tf_test_labels_pred, name="accuracy_test")
 
-
                 # Isolate the variables stored behind the scenes by the metric operation
                 running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="accuracy")
                 running_vars2 = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="accuracy_test")
@@ -117,7 +116,7 @@ class GenericModel(object):
 class LoadedModel(GenericModel):
 
     def make_model(self, folder_path):
-        batch_size = 128
+        #batch_size = 128
 
         self.input_layer = [num_input] + hidden_layers  #[num_features, hidden_nodes_1, hidden_nodes_2] #, hidden_nodes_3, hidden_nodes_4]
         self.output_layer = hidden_layers + [num_classes] #[hidden_nodes_1, hidden_nodes_2,num_labels] #, hidden_nodes_3, hidden_nodes_4, num_labels]
@@ -126,9 +125,15 @@ class LoadedModel(GenericModel):
             self.tf_train_dataset = tf.placeholder(tf.float64, shape = (batch_size, num_input))
             self.tf_train_labels = tf.placeholder(tf.float64, shape = (batch_size))
             self.tf_train_labels_probas = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
-
             self.tf_train_labels_pred = tf.placeholder(tf.float64, shape = (batch_size))
             self.tf_train_labels_probas_pred = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
+
+            self.tf_test_dataset = tf.placeholder(tf.float64, shape = (batch_size, num_input))
+            self.tf_test_labels = tf.placeholder(tf.float64, shape = (batch_size))
+            self.tf_test_labels_probas = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
+            self.tf_test_labels_pred = tf.placeholder(tf.float64, shape = (batch_size))
+            self.tf_test_labels_probas_pred = tf.placeholder(tf.float64, shape = (batch_size,num_classes))
+
 
             # Initialize weights and biases for computation graph
             labels = [str(a) for a in range(len(self.output_layer))]
@@ -163,11 +168,20 @@ class LoadedModel(GenericModel):
             self.recall, self.recall_op = tf.metrics.recall(labels=self.tf_train_labels, predictions=self.tf_train_labels_pred, name="accuracy")
             self.precision, self.precision_op = tf.metrics.precision(labels=self.tf_train_labels, predictions=self.tf_train_labels_pred, name="accuracy")
 
+            self.model_test_scores = self.four_layer_network_(self.tf_test_dataset)
+            self.loss_test = tf.reduce_mean((tf.nn.weighted_cross_entropy_with_logits(tf.cast(self.tf_test_labels_probas, dtype=tf.float64),self.model_test_scores, pos_weight=pos_weight)))
+            self.acc_test, self.acc_test_op = tf.metrics.accuracy(labels=self.tf_test_labels, predictions=self.tf_test_labels_pred, name="accuracy_test")
+            self.recall_test, self.recall_test_op = tf.metrics.recall(labels=self.tf_test_labels, predictions=self.tf_test_labels_pred, name="accuracy_test")
+            self.precision_test, self.precision_test_op = tf.metrics.precision(labels=self.tf_test_labels, predictions=self.tf_test_labels_pred, name="accuracy_test")
+
             # Isolate the variables stored behind the scenes by the metric operation
             running_vars = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="accuracy")
+            running_vars2 = tf.get_collection(tf.GraphKeys.LOCAL_VARIABLES, scope="accuracy_test")
 
             # Define initializer to initialize/reset running variables
-            self.running_vars_initializer = tf.variables_initializer(var_list=running_vars)
+            self.running_vars_initializer = tf.variables_initializer(var_list=running_vars) #,running_vars2))
+            self.running_vars_initializer2 = tf.variables_initializer(var_list=running_vars2)
+
 #def save_weights(weight, filename):
 #    np.savetxt(filename+'.txt',weight,delimiter=';')
 #def load_weights(filename):

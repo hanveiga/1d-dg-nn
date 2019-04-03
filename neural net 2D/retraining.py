@@ -21,9 +21,9 @@ def main(folder_path):
 
     model = load_nn(folder_path)
     graph = model.get_graph()
-
+    la = 0.5
     #data = load_data(dataset_path, normalised=normalL)
-    data = load_triangle_data(target_data,dataset_path,normalised=normalL)
+    data = load_triangle_data(target_data,dataset_path,lam=la, normalised=normalL)
 
 
     #model = GenericModel()
@@ -68,8 +68,8 @@ def main(folder_path):
                         for indx in range(len(model.weights)):
                             w = session.run(model.weights[indx])
                             b = session.run(model.biases[indx])
-                            model.save_weights(w,identifier+'l1_retrained2_best_w'+str(indx))
-                            model.save_weights(b,identifier+'l1_retrained2_best_b'+str(indx))
+                            model.save_weights(w,identifier+'retrained_l'+str(la)+'_tri_best_w'+str(indx))
+                            model.save_weights(b,identifier+'retrained_l'+str(la)+'_tri_best_b'+str(indx))
                         best_loss = l
 
                 nfolds  = data.validation._labels.shape[0]/batch_size
